@@ -1,0 +1,136 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  labels:
+    environment: dev
+    app: api
+    app.kubernetes.io/name: api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api
+  template:
+    metadata:
+      labels:
+        app: api
+    spec:
+      containers:
+      - name: ping-pong-api
+        image: n1mb0606/ping-pong-api:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: PING_PONG_ORG
+          value: ""
+        - name: PING_PONG_BUCKET
+          value: ""
+        - name: PING_PONG_TOKEN
+          value: ""
+        - name: PING_PONG_URL
+          value: "" 
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: listener
+  labels:
+    environment: dev
+    app: listener
+    app.kubernetes.io/name: listener
+spec:
+  selector:
+    matchLabels:
+      app: listener
+  template:
+    metadata:
+      labels:
+        app: listener
+    spec:
+      containers:
+      - name: ping-pong-listener
+        image: n1mb0606/ping-pong-listener:latest
+        env:
+        - name: PING_PONG_ORG
+          value: ""
+        - name: PING_PONG_BUCKET
+          value: ""
+        - name: PING_PONG_TOKEN
+          value: ""
+        - name: PING_PONG_URL
+          value: "" 
+        - name: PING_PONG_TARGET
+          value: ""
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: influxdb
+  labels:
+    environment: dev
+    app: influxdb
+    app.kubernetes.io/name: influxdb
+spec:
+  selector:
+    matchLabels:
+      app: influxdb
+  template:
+    metadata:
+      labels:
+        app: influxdb
+    spec:
+      containers:
+      - name: influxdb
+        image: influxdb:2.7.0
+        ports:
+        - containerPort: 8086
+        env:
+        - name: DOCKER_INFLUXDB_INIT_MODE
+          value: setup
+        - name: DOCKER_INFLUXDB_INIT_USERNAME
+          value: ""
+        - name: DOCKER_INFLUXDB_INIT_PASSWORD
+          value: ""
+        - name: DOCKER_INFLUXDB_INIT_ORG
+          value: ""
+        - name: DOCKER_INFLUXDB_INIT_BUCKET
+          value: ""
+        - name: DOCKER_INFLUXDB_INIT_ADMIN_TOKEN
+          value: ""
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-service
+  labels:
+    app: api
+    app.kubernetes.io/name: api
+    environment: dev
+spec:
+  type: NodePort
+  selector:
+    app: api
+  ports:
+  - protocol: TCP
+    port: 3000
+    targetPort: 3000 
+    nodePort: 32000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: influxdb-service
+  labels:
+    app: influxdb
+    app.kubernetes.io/name: influxdb
+    environment: dev
+spec:
+  type: NodePort
+  selector:
+    app: influxdb
+  ports:
+  - protocol: TCP
+    port: 8086
+    targetPort: 8086
+    nodePort: 32002
